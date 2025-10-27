@@ -9,7 +9,7 @@ app.use(express.json());
 const allowedOrigins = [
   "https://swiftpaystack.onrender.com",
   "https://swiftduty.onrender.com",
-  "https://test-0hcn.onrender.com" // your test frontend
+  "https://stktest-0hcn.onrender.com" // your test frontend
 ];
 
 app.use(
