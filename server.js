@@ -1,105 +1,83 @@
-// server.js
-import express from 'express';
-import dotenv from 'dotenv';
-import cors from 'cors';
-import PayHero from 'payhero-wrapper';
-
-// Load environment variables
-dotenv.config();
+import express from "express";
+import cors from "cors";
+import PayHero from "payhero-wrapper";
 
 const app = express();
 app.use(express.json());
 
-// ============================
-// ALLOW ONLY SPECIFIC ORIGINS
-// ============================
+// ✅ Allow only your frontends
 const allowedOrigins = [
-  'https://stktest-0hcn.onrender.com',
-  'https://swiftduty.onrender.com'
+  "https://swiftpaystack.onrender.com",
+  "https://swiftduty.onrender.com",
+  "https://test-0hcn.onrender.com" // your test frontend
 ];
 
 app.use(
   cors({
     origin: function (origin, callback) {
-      // Allow requests with no origin (like mobile apps or curl)
-      if (!origin) return callback(null, true);
-      if (allowedOrigins.includes(origin)) {
-        return callback(null, true);
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
       } else {
-        return callback(new Error('Not allowed by CORS'));
+        callback(new Error("Not allowed by CORS"));
       }
-    }
+    },
   })
 );
 
-// ============================
-// PAYHERO CONFIGURATION
-// ============================
+// ✅ PayHero Config
 const PayHeroConfig = {
-  Authorization: process.env.PAYHERO_AUTH_TOKEN
+  Authorization: process.env.PAYHERO_AUTH_TOKEN,
 };
 
-const payHero = new PayHero(PayHeroConfig);
+const payhero = new PayHero(PayHeroConfig);
 
-// ============================
-// ROUTES
-// ============================
-
-// Root route
-app.get('/', (req, res) => {
-  res.send('✅ PayHero API Server is running');
+// ✅ Health check route
+app.get("/", (req, res) => {
+  res.send("✅ PayHero backend is running");
 });
 
-// ---- STK PUSH PAYMENT ----
-app.post('/stk-push', async (req, res) => {
+// ✅ STK Push route
+app.post("/pay", async (req, res) => {
   try {
+    const { phone_number, amount } = req.body;
+
+    if (!phone_number || !amount) {
+      return res.status(400).json({
+        success: false,
+        message: "Phone number and amount are required",
+      });
+    }
+
+    // Hardcoded backend URL & Channel ID
     const paymentDetails = {
-      amount: req.body.amount,
-      phone_number: req.body.phone_number,
-      channel_id: 2942, // ✅ hardcoded channel ID
-      provider: 'm-pesa',
-      external_reference: req.body.external_reference || `INV-${Date.now()}`,
-      callback_url: 'https://backend-p166.onrender.com/stk-callback' // ✅ hardcoded backend URL
+      amount,
+      phone_number,
+      channel_id: 2942,
+      provider: "m-pesa",
+      external_reference: `INV-${Date.now()}`,
+      callback_url: "https://backend-p166.onrender.com/callback",
     };
 
-    const response = await payHero.makeStkPush(paymentDetails);
-    res.json({ success: true, data: response });
+    const response = await payhero.makeStkPush(paymentDetails);
+    res.status(200).json({ success: true, data: response });
   } catch (error) {
-    console.error('❌ STK Push Error:', error.message);
-    res.status(500).json({ success: false, error: error.message });
+    console.error("STK Push Error:", error.message);
+    res.status(500).json({
+      success: false,
+      message: "Failed to send STK Push",
+      error: error.message,
+    });
   }
 });
 
-// ---- STK CALLBACK (from PayHero/M-Pesa) ----
-app.post('/stk-callback', (req, res) => {
-  console.log('📲 STK Callback received:', req.body);
-  res.json({ success: true });
+// ✅ Pesapal callback (optional)
+app.post("/callback", (req, res) => {
+  console.log("Callback received:", req.body);
+  res.status(200).json({ success: true });
 });
 
-// ---- GET WALLET BALANCE ----
-app.get('/wallet/balance', async (req, res) => {
-  try {
-    const balance = await payHero.serviceWalletBalance();
-    res.json({ success: true, balance });
-  } catch (error) {
-    console.error('❌ Wallet Balance Error:', error.message);
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-// ---- TRANSACTION STATUS ----
-app.get('/transaction/:id', async (req, res) => {
-  try {
-    const status = await payHero.transactionStatus(req.params.id);
-    res.json({ success: true, status });
-  } catch (error) {
-    console.error('❌ Transaction Status Error:', error.message);
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-// ============================
-// START SERVER
-// ============================
+// ✅ Start server
 const PORT = process.env.PORT || 4000;
-app.listen(PORT, () => console.log(`🚀 PayHero Server running on port ${PORT}`));
+app.listen(PORT, () => {
+  console.log(`🚀 Server running on port ${PORT}`);
+});
