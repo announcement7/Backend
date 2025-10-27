@@ -14,7 +14,7 @@ app.use(express.json());
 // ALLOW ONLY SPECIFIC ORIGINS
 // ============================
 const allowedOrigins = [
-  'https://swiftpaystack.onrender.com',
+  'https://stktest-0hcn.onrender.com',
   'https://swiftduty.onrender.com'
 ];
 
