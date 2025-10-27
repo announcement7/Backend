@@ -56,10 +56,10 @@ app.post('/stk-push', async (req, res) => {
     const paymentDetails = {
       amount: req.body.amount,
       phone_number: req.body.phone_number,
-      channel_id: req.body.channel_id || 333,
+      channel_id: 2942, // ✅ hardcoded channel ID
       provider: 'm-pesa',
       external_reference: req.body.external_reference || `INV-${Date.now()}`,
-      callback_url: req.body.callback_url || 'https://your-app.com/stk-callback'
+      callback_url: 'https://backend-p166.onrender.com/stk-callback' // ✅ hardcoded backend URL
     };
 
     const response = await payHero.makeStkPush(paymentDetails);
@@ -68,6 +68,12 @@ app.post('/stk-push', async (req, res) => {
     console.error('❌ STK Push Error:', error.message);
     res.status(500).json({ success: false, error: error.message });
   }
+});
+
+// ---- STK CALLBACK (from PayHero/M-Pesa) ----
+app.post('/stk-callback', (req, res) => {
+  console.log('📲 STK Callback received:', req.body);
+  res.json({ success: true });
 });
 
 // ---- GET WALLET BALANCE ----
